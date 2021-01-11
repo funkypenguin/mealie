@@ -126,7 +126,6 @@ class MealPlan(BaseModel):
     def _unpack_doc(document: MealPlanDocument):
         meal_plan = json.loads(document.to_json())
         del meal_plan["_id"]["$oid"]
-        print(meal_plan)
         meal_plan["uid"] = meal_plan["uid"]["$uuid"]
 
         meal_plan["startDate"] = meal_plan["startDate"]["$date"]

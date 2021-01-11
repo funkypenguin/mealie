@@ -27,6 +27,12 @@ Progress:
     - [ ] Site Settings
     - [ ] Themes
 
+Import / Export Functionality
+    - [ ] Recipes
+    - [ ] MealPlans
+    - [ ] Site Settings
+    - [ ] Themes
+
 """
 
 if USE_TINYDB:
@@ -51,7 +57,23 @@ class BaseDocument:
         document = json.loads(document.to_json())
         del document["_id"]
 
-        document["dateAdded"] = document["dateAdded"]["$date"]
+        # Recipe Cleanup
+        if document["dateAdded"]:
+            document["dateAdded"] = document["dateAdded"]["$date"]
+
+        if document["uid"]:
+            document["uid"] = document["uid"]["$uuid"]
+
+        # Meal Plan
+        if document["meals"]:
+            document["startDate"] = document["startDate"]["$date"]
+            document["endDate"] = document["endDate"]["$date"]
+
+            meals = []
+            for meal in document["meals"]:
+                meal["date"] = meal["date"]["$date"]
+                meals.append(meal)
+            document["meals"] = meals
 
         return document
 
