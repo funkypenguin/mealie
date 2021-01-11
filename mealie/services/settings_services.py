@@ -1,17 +1,23 @@
 import json
 from typing import List, Optional
 
-from db.mongo.settings_models import (SiteSettingsDocument, SiteThemeDocument,
-                                      ThemeColorsDocument, WebhooksDocument)
+from bson.json_util import default
+from db.db_setup import db
+from db.mongo.settings_models import (
+    SiteSettingsDocument,
+    SiteThemeDocument,
+    ThemeColorsDocument,
+    WebhooksDocument,
+)
 from pydantic import BaseModel
 from startup import USE_TINYDB
 from utils.logger import logger
 
 
 class Webhooks(BaseModel):
-    webhookTime: str
-    webhookURLs: Optional[List[str]]
-    enabled: bool
+    webhookTime: str = "00:00"
+    webhookURLs: Optional[List[str]] = []
+    enabled: bool = False
 
     @staticmethod
     def run():
@@ -34,26 +40,22 @@ class SiteSettings(BaseModel):
             }
         }
 
-    @staticmethod
-    def _unpack_doc(document: SiteSettingsDocument):
-        document = json.loads(document.to_json())
-        del document["_id"]
-        document["webhhooks"] = Webhooks(**document["webhooks"])
-        return SiteSettings(**document)
+    @classmethod
+    def _unpack_db_entry(cls, document: dict):
+        return cls(**document)
 
     @staticmethod
     def get_site_settings():
-        if USE_TINYDB:
-            document = tinydb.settings.get("main")
-        else:
-            try:
-                document = SiteSettingsDocument.objects.get(name="main")
-            except:
-                webhooks = WebhooksDocument()
-                document = SiteSettingsDocument(name="main", webhooks=webhooks)
-                document.save()
+        document = db.settings.get("main")
 
-        return SiteSettings._unpack_doc(document)
+        try:
+            pass
+        except:
+            webhooks = Webhooks()
+            default_entry = SiteSettings(name="main", webhooks=webhooks)
+            document = db.settings.save_new(default_entry.dict(), webhooks.dict())
+
+        return SiteSettings._unpack_db_entry(document)
 
     def update(self):
         document = SiteSettingsDocument.objects.get(name="main")
